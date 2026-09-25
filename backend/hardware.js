@@ -567,7 +567,7 @@ class HardwareConnector {
       roll = parseFloat((Math.atan2(ay, az) * (180 / Math.PI)).toFixed(1));
     }
 
-    // ── Motion state ──────────────────────────────────────────────────────────
+    // ── Motion state & Magnitudes ─────────────────────────────────────────────
     let accelMagnitude = null;
     let motionState = 'STATIONARY';
     if (ax !== null && ay !== null) {
@@ -580,6 +580,14 @@ class HardwareConnector {
         accelMagnitude > 0.8 ? 'IN_MOTION' :
         'STATIONARY';
     }
+
+    const gyroMagnitude = (gx !== null || gy !== null || gz !== null)
+      ? parseFloat(Math.sqrt((gx || 0) ** 2 + (gy || 0) ** 2 + (gz || 0) ** 2).toFixed(3))
+      : 0;
+
+    const tiltMagnitude = (pitch !== null || roll !== null)
+      ? parseFloat(Math.sqrt((pitch || 0) ** 2 + (roll || 0) ** 2).toFixed(1))
+      : 0;
 
     // ── Write latestState ────────────────────────────────────────────────────
     this.latestState.raw = {
@@ -602,9 +610,11 @@ class HardwareConnector {
       distanceChangeM: parseFloat(distanceChangeM.toFixed(3)),
       motionState,
       accelMagnitude,
+      gyroMagnitude,
+      tiltMagnitude,
     };
 
-    return { distanceM, approachRateMps, pitch, roll, ax, ay, az, gx, gy, gz };
+    return { distanceM, approachRateMps, pitch, roll, ax, ay, az, gx, gy, gz, accelMagnitude, gyroMagnitude, tiltMagnitude };
   }
 
   // ---------------------------------------------------------------------------
@@ -623,13 +633,13 @@ class HardwareConnector {
    * Both transports call this same function — there is one pipeline.
    *
    * @param {string} line - Raw packet string, e.g. "DATA,175,22.66,0.02,-0.07,0,1,-59,3"
-   * @param {object} overrides - Optional transport metadata (gatewayId, sensorNodeId, deviceType)
-   *                             These are diagnostic labels only — they do NOT alter processing.
+   * @param {object} overrides - Optional transport metadata (gatewayId, sensorNodeId, deviceType, sourceOverride, persist)
    */
   handleIncomingLine(line, {
     gatewayOverride = null,
     sensorOverride = null,
     deviceTypeOverride = null,
+    sourceOverride = null,
     persist = true,
   } = {}) {
     const rawStr = line.trim();
@@ -638,10 +648,11 @@ class HardwareConnector {
     this.packetCount++;
     this.lastPacketTimestamp = new Date().toISOString();
 
-    // Transport metadata — diagnostic only, does not affect packet processing
+    // Transport metadata & source semantics (HARDWARE vs SIMULATION)
     const effectiveGatewayId = gatewayOverride || this.gatewayId;
     const effectiveSensorNodeId = sensorOverride || this.sensorNodeId;
-    const effectiveDeviceType = deviceTypeOverride || 'ESP32_RECEIVER';
+    const effectiveSource = sourceOverride || (persist ? 'HARDWARE' : 'SIMULATION');
+    const effectiveDeviceType = deviceTypeOverride || (effectiveSource === 'SIMULATION' ? 'ESP32_RECEIVER_SIM' : 'ESP32_RECEIVER');
 
     // Store the original packet in the ring buffer exactly as received (max 50)
     this.rawPacketBuffer.unshift({
@@ -658,6 +669,7 @@ class HardwareConnector {
     this.latestState.deviceType = effectiveDeviceType;
     this.latestState.gatewayId = effectiveGatewayId;
     this.latestState.sensorNodeId = effectiveSensorNodeId;
+    this.latestState.source = effectiveSource;
 
     // ── Stage 1 ──────────────────────────────────────────────────────────────
     const decoded = this.decodeRawPacket(rawStr);
@@ -674,13 +686,14 @@ class HardwareConnector {
     }
 
     // ── Stage 3 ──────────────────────────────────────────────────────────────
-    const { distanceM, approachRateMps, pitch, roll, ax, ay, az, gx, gy, gz } =
+    const { distanceM, approachRateMps, pitch, roll, ax, ay, az, gx, gy, gz, accelMagnitude, gyroMagnitude, tiltMagnitude } =
       this.normaliseAndDerive(mapped);
 
     // ── Forward to unified pipeline ──────────────────────────────────────────
     if (this.telemetryCallback) {
       this.telemetryCallback({
         ...this.latestState,
+        source: effectiveSource,
         gatewayId: effectiveGatewayId,
         sensorNodeId: effectiveSensorNodeId,
         persist,

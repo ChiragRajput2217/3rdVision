@@ -18,14 +18,27 @@ export const useSocket = () => {
     const handleConnect = () => {
       setIsConnected(true);
       useAppStore.setState({ connectionStatus: 'LIVE' });
+      // Pause the local simulation loop — backend Socket.IO is now the authoritative state source.
+      // This prevents demo/simulation data from overwriting live telemetry in production.
+      const isDemoMode = import.meta.env.VITE_DEMO_MODE !== 'false';
+      if (!isDemoMode) {
+        simulationEngine.setLiveMode(true);
+      }
     };
     const handleDisconnect = () => {
       setIsConnected(false);
       useAppStore.setState({ connectionStatus: 'SIMULATION' });
+      // Resume frontend fallback simulation when backend disconnects
+      simulationEngine.setLiveMode(false);
     };
 
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
+
+    // If already connected on mount, enter live mode immediately
+    if (socket.connected) {
+      handleConnect();
+    }
 
     // Event 1: sensor:update
     socket.on('sensor:update', (sensorData: Sensor) => {
@@ -63,12 +76,30 @@ export const useSocket = () => {
     });
 
     // Event 5: risk:update
-    socket.on('risk:update', (data: { vehicleId: string; riskScore: number; recommendedSpeed: number }) => {
+    socket.on('risk:update', (data: { vehicleId: string; riskScore: number; recommendedSpeed: number; riskLevel: string; riskFactors: string[] }) => {
       console.log('⚡ Event received: risk:update', data);
+      // Update the vehicle risk data in the store when a live risk:update arrives
+      useAppStore.setState((state) => ({
+        vehicles: state.vehicles.map((v) =>
+          v.id === data.vehicleId
+            ? {
+                ...v,
+                status: data.riskLevel as any,
+                telemetry: {
+                  ...v.telemetry,
+                  riskScorePercent: data.riskScore,
+                  riskLevel: data.riskLevel,
+                  riskFactors: data.riskFactors,
+                  recommendedSpeedKmh: data.recommendedSpeed,
+                },
+              }
+            : v
+        ),
+      }));
     });
 
     // Event 6: device:status
-    socket.on('device:status', (device: { id: string; status: string }) => {
+    socket.on('device:status', (device: { id: string; status: string; source?: string }) => {
       console.log('⚡ Event received: device:status', device);
     });
 

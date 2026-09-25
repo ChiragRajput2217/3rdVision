@@ -259,7 +259,7 @@ router.post('/hardware/disconnect', async (req, res) => {
 //         "sensorNodeId": "ESP32_SENSOR_SIM_01" // optional transport metadata
 //       }
 router.post('/hardware/ingest', (req, res) => {
-  const { rawPacket, gatewayId, sensorNodeId, deviceType, persist } = req.body || {};
+  const { rawPacket, gatewayId, sensorNodeId, deviceType, persist, source } = req.body || {};
   if (!rawPacket || typeof rawPacket !== 'string') {
     return res.status(400).json({
       success: false,
@@ -272,12 +272,19 @@ router.post('/hardware/ingest', (req, res) => {
   // Defaults to true for hardware or callers not specifying the flag.
   const shouldPersist = persist !== false;
 
+  // Source semantics:
+  // - SIMULATION if persist=false (external simulator traffic)
+  // - HARDWARE   if persist=true  (real ESP32 receiver)
+  // - Caller-supplied 'source' field takes precedence.
+  const sourceOverride = source || (shouldPersist ? 'HARDWARE' : 'SIMULATION');
+
   // Route through the same handleIncomingLine() used by the COM5 serial receiver.
-  // Optional gateway/sensor IDs are transport metadata only — processing is identical.
+  // All parsing, risk, ML, and Socket.IO logic is identical regardless of transport.
   hardwareConnector.handleIncomingLine(rawPacket, {
     gatewayOverride: gatewayId || null,
     sensorOverride: sensorNodeId || null,
     deviceTypeOverride: deviceType || null,
+    sourceOverride,
     persist: shouldPersist,
   });
 
@@ -286,6 +293,7 @@ router.post('/hardware/ingest', (req, res) => {
     packetCount: hardwareConnector.packetCount,
     rawPacket,
     persist: shouldPersist,
+    source: sourceOverride,
   });
 });
 
