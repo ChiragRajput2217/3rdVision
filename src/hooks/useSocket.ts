@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { socketService } from '../services/socket.service';
 import { useAlertStore } from '../store/alertStore';
 import { useSiteStore } from '../store/siteStore';
-import { Alert, Vehicle, Sensor } from '../types';
+import { Alert, Vehicle, Sensor, VehicleStatus } from '../types';
 
 import { useAppStore } from '../store/appStore';
 import { simulationEngine } from '../services/simulation';
@@ -76,7 +76,7 @@ export const useSocket = () => {
     });
 
     // Event 5: risk:update
-    socket.on('risk:update', (data: { vehicleId: string; riskScore: number; recommendedSpeed: number; riskLevel: string; riskFactors: string[] }) => {
+    socket.on('risk:update', (data: { vehicleId: string; riskScore: number; recommendedSpeed: number; riskLevel: VehicleStatus; riskFactors: string[] }) => {
       console.log('⚡ Event received: risk:update', data);
       // Update the vehicle risk data in the store when a live risk:update arrives
       useAppStore.setState((state) => ({
