@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix Remix Remix Remix 3rd-Vision",
+  "description": "Imported from GitHub: Sh-2540/3rd-Vision",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

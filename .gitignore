@@ -1,0 +1,69 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+server-debug.log
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+
+# Environment files (NEVER commit real secrets)
+.env
+.env.local
+.env.production
+.env.production.local
+backend/.env
+backend/.env.local
+ml-service/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Python virtual environments
+venv/
+.venv/
+env/
+.env/
+ml-service/venv/
+ml-service/.venv/
+
+# Python distribution / packaging
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Test artifacts / temp scripts
+backend/test-*.mjs
+backend/verify-*.mjs
+backend/debug-*.mjs
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride

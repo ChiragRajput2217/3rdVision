@@ -1,0 +1,64 @@
+{
+  "model_version": "rf-v1",
+  "algorithm": "RandomForestClassifier",
+  "n_features": 9,
+  "feature_names": [
+    "distance_m",
+    "approach_rate_mps",
+    "pitch",
+    "roll",
+    "accel_magnitude",
+    "gyro_magnitude",
+    "tilt_magnitude",
+    "visibility_m",
+    "humidity_percent"
+  ],
+  "risk_labels": [
+    "SAFE",
+    "WARNING",
+    "HIGH_RISK",
+    "CRITICAL"
+  ],
+  "feature_importance": {
+    "visibility_m": 0.2219,
+    "distance_m": 0.2193,
+    "approach_rate_mps": 0.1724,
+    "humidity_percent": 0.1274,
+    "gyro_magnitude": 0.0982,
+    "tilt_magnitude": 0.0956,
+    "accel_magnitude": 0.0324,
+    "pitch": 0.0201,
+    "roll": 0.0128
+  },
+  "feature_importance_note": "Global/model-level measure of feature utilisation. Does NOT describe causal contribution for any individual prediction.",
+  "accuracy": 0.9808,
+  "per_class_metrics": {
+    "SAFE": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 400
+    },
+    "WARNING": {
+      "precision": 0.9843,
+      "recall": 0.9781,
+      "f1_score": 0.9812,
+      "support": 320
+    },
+    "HIGH_RISK": {
+      "precision": 0.9738,
+      "recall": 0.942,
+      "f1_score": 0.9576,
+      "support": 276
+    },
+    "CRITICAL": {
+      "precision": 0.9488,
+      "recall": 1.0,
+      "f1_score": 0.9737,
+      "support": 204
+    }
+  },
+  "metrics_disclaimer": "These metrics reflect performance on synthetic prototype data and do NOT represent real-world mining safety performance. There is no scientifically established safety recall threshold for this prototype system.",
+  "training_note": "Trained on synthetic/prototype scenario data. NOT validated on real NMDC mine incident data. Labels generated from safety rules, not historical accidents. speed_kmh is excluded from rf-v1; the prototype hardware (ESP32 + HC-SR04 + MPU6500) has no physical speed sensor.",
+  "future_features_note": "Optional telemetry (speed_kmh, latitude, longitude, heading_degrees, nearest_vehicle_distance_m, relative_speed_kmh, traffic_density, zone_speed_limit) may be incorporated in future rf-v2 models and are NOT required for rf-v1 inference."
+}
